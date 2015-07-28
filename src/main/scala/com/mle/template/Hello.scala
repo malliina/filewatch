@@ -10,6 +10,8 @@ import com.mle.file.Watcher
  */
 object Hello {
   def main(args: Array[String]) {
-    Watcher.start(Paths.get("E:\\test"))
+    val path = Paths.get("E:\\test")
+    val events = Watcher.fileEvents(path)
+    events.foreach(println)
   }
 }

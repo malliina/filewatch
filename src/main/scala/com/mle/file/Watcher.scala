@@ -1,7 +1,7 @@
 package com.mle.file
 
 import java.nio.file.StandardWatchEventKinds.{ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW}
-import java.nio.file._
+import java.nio.file.{FileSystems, Path, WatchEvent, WatchService}
 
 import rx.lang.scala.schedulers.NewThreadScheduler
 import rx.lang.scala.{Observable, Subscriber}
@@ -10,30 +10,14 @@ import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 
-sealed trait PathEvent {
-  def path: Path
-}
-
-case class PathCreated(path: Path) extends PathEvent
-
-case class PathDeleted(path: Path) extends PathEvent
-
-case class PathModified(path: Path) extends PathEvent
-
 /**
  * @author Michael
+ * @see https://docs.oracle.com/javase/tutorial/essential/io/notification.html
  */
 object Watcher {
-  def start(path: Path): Unit = {
-    val events = fileEvents(path)
-    println("subscribing")
-    events.foreach(println)
-    println("subscribed")
-  }
+  def fileEvents(path: Path): Observable[PathEvent] = watchEvents(path).flatMapIterable(toPathEvent(_).toSeq)
 
-  def fileEvents(path: Path): Observable[PathEvent] = watcherObservable(path).flatMapIterable(toPathEvent(_).toSeq)
-
-  def watcherObservable(path: Path): Observable[WatchEvent[Path]] = {
+  def watchEvents(path: Path): Observable[WatchEvent[Path]] = {
     Observable[WatchEvent[Path]](subscriber => {
       val watcher = FileSystems.getDefault.newWatchService()
       val registerKey = path.register(watcher, ENTRY_CREATE, ENTRY_DELETE)
